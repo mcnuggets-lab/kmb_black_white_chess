@@ -1,14 +1,15 @@
 use std::time::Instant;
+use rprompt;
 
 type Board = Vec<Vec<u8>>;
 type Position = (usize, usize);
 
-fn build_board_from_str(board_str: &str, width: usize, length: usize) -> Board {
-    let mut board: Board = vec![vec![0; width]; length];
+fn build_board_from_str(board_str: &str, ncols: usize, nrows: usize) -> Board {
+    let mut board: Board = vec![vec![0; ncols]; nrows];
     let chars: Vec<char> = board_str.chars().collect();
     for (i, &c) in chars.iter().enumerate() {
-        let row = i / width;
-        let col = i % width;
+        let row = i / ncols;
+        let col = i % ncols;
         board[row][col] = if c == 'x' { 9 } else { c.to_digit(10).unwrap() as u8 };
     }
     board
@@ -131,17 +132,24 @@ fn solve_subroutine(
 }
 
 fn main() {
-    let length = 7;
-    let width = 7;
+    // let nrows = 7;
+    // let ncols = 7;
 
     // board_str is left-to-right, up-to-down. 1=black, 0=white, x=hole.
-    let board_str = "010011x0x0100001x011110101x0000x1011001x01x011010";
+    // let board_str = "010011x0x0100001x011110101x0000x1011001x01x011010";
 
-    let mut init_board = build_board_from_str(board_str, width, length);
+    let nrows: usize = rprompt::prompt_reply("Enter number of rows (top-to-bottom size): ").unwrap().parse().unwrap();
+    let ncols: usize = rprompt::prompt_reply("Enter number of columns (left-to-right size): ").unwrap().parse().unwrap();
+    let board_str = rprompt::prompt_reply("Enter board as a string (left-to-right, up-to-down, 1=black, 0=white, x=hole):\n").unwrap();
+
+    let mut init_board = build_board_from_str(&board_str.trim(), ncols, nrows);
     let start_time = Instant::now();
     let has_sol = solve(&mut init_board);
-    println!("{:?}", has_sol.is_some());
-    println!("{:?}", start_time.elapsed());
+
+    println!();
+    println!("Has solution: {:?}", has_sol.is_some());
+    println!("Time elapsed: {:?}", start_time.elapsed());
+    println!();
 
     if let Some(sol) = has_sol {
         let display_board = display_moves_on_board(&init_board, &sol);
@@ -152,4 +160,6 @@ fn main() {
             println!();
         }
     }
+    println!();
+    rprompt::prompt_reply("Press Enter to exit.").unwrap();
 }
