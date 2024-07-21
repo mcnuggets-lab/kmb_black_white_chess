@@ -4,7 +4,7 @@ use rprompt;
 type Board = Vec<Vec<u8>>;
 type Position = (usize, usize);
 
-fn build_board_from_str(board_str: &str, ncols: usize, nrows: usize) -> Board {
+fn build_board_from_str(board_str: &str, nrows: usize, ncols: usize) -> Board {
     let mut board: Board = vec![vec![0; ncols]; nrows];
     let chars: Vec<char> = board_str.chars().collect();
     for (i, &c) in chars.iter().enumerate() {
@@ -142,7 +142,7 @@ fn main() {
     let ncols: usize = rprompt::prompt_reply("Enter number of columns (left-to-right size): ").unwrap().parse().unwrap();
     let board_str = rprompt::prompt_reply("Enter board as a string (left-to-right, up-to-down, 1=black, 0=white, x=hole):\n").unwrap();
 
-    let mut init_board = build_board_from_str(&board_str.trim(), ncols, nrows);
+    let mut init_board = build_board_from_str(&board_str.trim(), nrows, ncols);
     let start_time = Instant::now();
     let has_sol = solve(&mut init_board);
 
@@ -162,4 +162,166 @@ fn main() {
     }
     println!();
     rprompt::prompt_reply("Press Enter to exit.").unwrap();
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_build_board_from_str_1() {
+        // standard case
+        assert_eq!(
+            vec![
+                vec![1, 1, 0, 0],
+                vec![0, 1, 0, 9],
+                vec![0, 0, 9, 0],
+                vec![9, 0, 0, 1],
+            ],
+            build_board_from_str("1100010x00x0x001", 4, 4)
+        );
+    }
+
+    #[test]
+    fn test_build_board_from_str_2() {
+        // non-rectangular board
+        assert_eq!(
+            vec![
+                vec![1, 1, 0, 0],
+                vec![0, 1, 0, 9],
+                vec![0, 0, 9, 0],
+            ],
+            build_board_from_str("1100010x00x0", 3, 4)
+        );
+    }
+
+    #[test]
+    fn test_action_1() {
+        // standard case
+        let board = vec![
+            vec![1, 1, 0, 0],
+            vec![0, 1, 0, 9],
+            vec![0, 0, 9, 0],
+            vec![9, 0, 0, 1],
+        ];
+
+        assert_eq!(vec![
+            vec![1, 0, 0, 0],
+            vec![0, 0, 0, 9],
+            vec![1, 1, 9, 0],
+            vec![9, 1, 0, 1],
+        ], action(&board, (2, 1)));
+    }
+
+    #[test]
+    #[should_panic(expected = "Cannot action on a hole.")]
+    fn test_action_2() {
+        // panic: cannot action on a hole
+        let board = vec![
+            vec![1, 1, 0, 0],
+            vec![0, 1, 0, 9],
+            vec![0, 0, 9, 0],
+            vec![9, 0, 0, 1],
+        ];
+
+        action(&board, (1, 3));
+    }
+
+    #[test]
+    fn test_is_complete_1() {
+        let board = vec![
+            vec![9, 1, 1],
+            vec![1, 1, 9],
+            vec![9, 1, 1],
+        ];
+
+        assert_eq!(true, is_complete(&board));
+    }
+
+    #[test]
+    fn test_is_complete_2() {
+        let board = vec![
+            vec![9, 1, 1],
+            vec![1, 1, 9],
+            vec![9, 1, 0],
+        ];
+
+        assert_eq!(false, is_complete(&board));
+    }
+
+    #[test]
+    fn test_is_complete_minor_1() {
+        let board = vec![
+            vec![1, 1, 1],
+            vec![1, 0, 1],
+            vec![1, 1, 1],
+        ];
+
+        assert_eq!(true, is_complete_minor(&board, 1));
+    }
+
+    #[test]
+    fn test_is_complete_minor_2() {
+        let board = vec![
+            vec![1, 1, 1],
+            vec![1, 0, 1],
+            vec![1, 1, 1],
+        ];
+
+        assert_eq!(false, is_complete_minor(&board, 2));
+    }
+
+    #[test]
+    fn test_is_complete_minor_3() {
+        // a hole does not matter when checking completeness
+        let board = vec![
+            vec![1, 1, 1],
+            vec![1, 9, 1],
+            vec![1, 1, 0],
+        ];
+
+        assert_eq!(true, is_complete_minor(&board, 2));
+    }
+
+    #[test]
+    fn test_solve_1() {
+        // standard case, has solution
+        let mut board = vec![
+            vec![1, 1, 0, 0],
+            vec![0, 1, 0, 9],
+            vec![0, 0, 9, 0],
+            vec![9, 0, 0, 1],
+        ];
+
+        assert_eq!(Some(
+            vec![(0, 0), (0, 2), (0, 3), (1, 0), (1, 1), (2, 1), (3, 1), (2, 3)]
+        ), solve(&mut board));
+    }
+
+    #[test]
+    fn test_solve_2() {
+        // standard case, no solution
+        let mut board = vec![
+            vec![1, 1, 0, 0],
+            vec![0, 1, 0, 9],
+            vec![0, 0, 9, 0],
+            vec![1, 0, 9, 1],
+        ];
+
+        assert_eq!(None, solve(&mut board));
+    }
+
+    #[test]
+    fn test_solve_3() {
+        // non-rectangular board
+        let mut board = vec![
+            vec![1, 1, 0, 0],
+            vec![0, 1, 0, 9],
+            vec![1, 0, 9, 0],
+        ];
+
+        assert_eq!(Some(
+            vec![(0, 0), (0, 1), (0, 3), (2, 0), (1, 1), (2, 3)]
+        ), solve(&mut board));
+    }
 }
