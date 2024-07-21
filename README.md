@@ -1,5 +1,7 @@
 # KMB Black-White-Chess Solution Finder
 
+![badge](https://github.com/mcnuggets-lab/kmb_black_white_chess/actions/workflows/rust.yml/badge.svg)
+
 Search-based solution finder for KMB's black-white-chess minigame.
 
 ## How to compile
